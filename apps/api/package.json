@@ -1,0 +1,16 @@
+{
+	"name":"api",
+	"version": "1.0.0",
+	"description": "TBD",
+	"scripts": {
+
+		"ci:install": "pipenv install",
+		"dev": "pipenv run uvicorn main:app --reload --port 3022",
+		"lint": "pipenv run black .",
+		"generate": "pipenv run python3 generate.py",
+		"preinstall": "pipenv install --dev"
+	},
+	"devDependencies": {
+		"typescript": "^4.6.2"
+	}
+}

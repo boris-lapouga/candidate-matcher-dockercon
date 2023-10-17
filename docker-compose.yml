@@ -1,0 +1,67 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15
+    env_file:
+      - .env
+    volumes:
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
+
+  backend:
+    build: ./apps/api
+    volumes:
+      - ./apps/api:/app
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+
+  frontend:
+    build: ./apps/web
+    volumes:
+      - ./apps/web:/app
+    ports:
+      - "3000:3000"
+
+  jupyter:
+    image: jupyter/scipy-notebook:latest
+    volumes:
+      - ./notebooks:/home/jovyan/work
+    ports:
+      - "8888:8888"
+
+  minio:
+    restart: unless-stopped
+    container_name: minio
+    image: minio/minio
+    env_file:
+      - .env
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:9000/minio/health/live']
+      interval: 30s
+      timeout: 20s
+      retries: 3
+    ports:
+      - 9000:9000
+      - 9001:9001
+    volumes:
+      - minio:/data
+
+  minio-setup:
+    restart: "no"
+    container_name: minio-setup
+    image: minio/mc
+    entrypoint: |
+      /bin/sh -c "
+        /usr/bin/mc alias set local http://minio:9000 test fakesecret;
+        /usr/bin/mc admin user add local minio miniopass;
+        /usr/bin/mc admin policy attach local readwrite --user minio;
+        exit 0;
+      "
+    depends_on:
+      - minio
+
+volumes:
+  minio: {}

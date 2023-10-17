@@ -1,7 +1,7 @@
-# Use an official Python runtime as a parent image
+# Use Python 3.11
 FROM python:3.11-slim
 
-# Set work directory
+# Set the working directory
 WORKDIR /app
 
 # Install Pipenv
@@ -17,8 +17,8 @@ RUN pipenv install --deploy --ignore-pipfile
 # Copy the source code
 COPY ./src /app/src
 
-# Copy the current directory contents into the container at /app
-COPY . /app/
+# Expose port 80
+EXPOSE 80
 
-# Run the app
-CMD ["pipenv", "run", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+# Run the application
+CMD ["pipenv", "run", "python", "src/main.py"]

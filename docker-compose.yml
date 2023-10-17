@@ -1,6 +1,17 @@
 version: '3.8'
 
 services:
+  data-ingestion:
+    build: 
+      context: ./apps/data-ingestion
+      dockerfile: Dockerfile
+    volumes:
+      - ./apps/data-ingestion:/app
+    ports:
+      - "8080:80"
+    depends_on:
+      - minio
+      - db
   db:
     image: postgres:15
     env_file:
@@ -9,7 +20,9 @@ services:
       - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
 
   backend:
-    build: ./apps/api
+    build: 
+      context: ./apps/api
+      dockerfile: Dockerfile
     volumes:
       - ./apps/api:/app
     ports:
@@ -18,9 +31,11 @@ services:
       - db
 
   frontend:
-    build: ./apps/web
+    build:
+      context: .
+      dockerfile: ./apps/web/Dockerfile
     volumes:
-      - ./apps/web:/app
+      - .:/app
     ports:
       - "3000:3000"
 
@@ -36,7 +51,7 @@ services:
     container_name: minio
     image: minio/minio
     env_file:
-      - .env
+      - ./.env
     command: server /data --console-address ":9001"
     healthcheck:
       test: ['CMD', 'curl', '-f', 'http://localhost:9000/minio/health/live']
@@ -53,15 +68,18 @@ services:
     restart: "no"
     container_name: minio-setup
     image: minio/mc
+    env_file:
+      - ./.env
     entrypoint: |
       /bin/sh -c "
-        /usr/bin/mc alias set local http://minio:9000 test fakesecret;
+        /usr/bin/mc alias set local http://minio:9000 $$MINIO_ROOT_USER $$MINIO_ROOT_PASSWORD;
         /usr/bin/mc admin user add local minio miniopass;
         /usr/bin/mc admin policy attach local readwrite --user minio;
         exit 0;
       "
     depends_on:
-      - minio
+      minio:
+        condition: service_healthy
 
 volumes:
   minio: {}
